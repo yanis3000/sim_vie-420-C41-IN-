@@ -3,6 +3,7 @@
 # ------------------------------------------------------------
 import random, math
 from SimVie_Neurone import SystemeNerveux
+from glande import Glande
 
 # ------------------------------------------------------------
 # Données environnementales
@@ -42,6 +43,9 @@ class Creature:
         self.sensibilite_olfactive = random.uniform(0.8, 1.2)
         # Portée olfactive croissant selon la racine carrée de la taille
         self.portee_olfactive = (150 + math.sqrt(self.taille) * 30) * self.sensibilite_olfactive
+
+        self.envie_reproduction = 0
+        self.glande = Glande(self.envie_reproduction, self.position)
 
     # --- Olfaction directionnelle ---
     def percevoir(self, aliments):
