@@ -4,7 +4,7 @@
 import random, math
 from SimVie_Neurone import SystemeNerveux
 from objects_olfactifs import Glande, Aliment
-from organe_sensoriel import Narine
+from organe_olfactif import Narine
 
 # ------------------------------------------------------------
 # Données environnementales
@@ -30,8 +30,9 @@ class Creature:
         self.orientation = random.uniform(0, 360)
         self.vitesse = 20
         self.energie = 100
-        self.cerveau = SystemeNerveux()
-        self.narines = Narine(random.uniform(0.8, 1.2))
+        self.narines = Narine(self.taille, random.uniform(0.8, 1.2))
+        self.cerveau = SystemeNerveux(self.narines.capteur.ganglion)
+
 
         self.envie_reproduction = random.randint(10, 100)
         self.glande = Glande(self.envie_reproduction, self.position)
@@ -117,7 +118,7 @@ class Creature:
         # --- 2. TRAITEMENT NEURONAL ---
         # Le système nerveux interne traite les signaux sensoriels
         # et produit une activation motrice globale (de 0 à 1)
-        activation = self.cerveau.cycle(stimuli)
+        activation = self.cerveau.cycle(self.narines.capteur.capteurs, self.narines.capteur.vomeronasal, stimuli)
 
         # --- 3. ORIENTATION ---
         # Différence gauche-droite → rotation vers le côté le plus odorant

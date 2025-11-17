@@ -217,7 +217,7 @@ class Vue:
         id_p = self.canevas.create_oval(px - 2, py - 2, px + 2, py + 2, fill="black", outline="")
 
         # Champ olfactif
-        portee = creature.portee_olfactive
+        portee = creature.narines.portee_olfactive
         id_o = self.canevas.create_oval(x - portee, y - portee, x + portee, y + portee,
                                         outline="#00cccc", width=1, dash=(4, 4))
 

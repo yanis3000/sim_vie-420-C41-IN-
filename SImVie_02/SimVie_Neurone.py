@@ -5,11 +5,10 @@ from abc import ABC
 # ------------------------------------------------------------
 import random
 
-class Neurone(ABC):
+class Neurone():
     """Unité de base : reçoit plusieurs entrées (dendrites) et transmet un signal
        à plusieurs autres neurones (axones)."""
     def __init__(self, seuil=1.0):
-        super().__init__()
         self.refractaire = 0  # temps restant avant de pouvoir tirer à nouveau
         self.delai_refractaire = 3  # durée fixe (en cycles)
         self.seuil = seuil # stimulation nécessaire pour que le neurone s'active
@@ -47,33 +46,13 @@ class Neurone(ABC):
         else:
             self.actif = False
 
-class NeuroneOlfactive(Neurone):
-
-    def __init__(self):
-        super().__init__()
-
-
-
-
 
 class SystemeNerveux:
     """Réseau neuronal hiérarchique :
        capteurs -> ganglions sensoriels -> interneurones -> ganglions moteurs -> moteurs"""
-    def __init__(self, nb_capteurs=8, nb_vomeronasal=8, nb_ganglions=4, nb_inter=10, nb_moteurs=4):
-        self.capteurs = []
-        for i in range(nb_capteurs):
-            neurone = Neurone(seuil=0.5)
-            self.capteurs.append(neurone)
+    def __init__(self, ganglion, nb_ganglions=4, nb_inter=10, nb_moteurs=4):
 
-        self.vomeronasal = []
-        for i in range(nb_vomeronasal):
-            neurone = Neurone(seuil=1.0)
-            self.vomeronasal.append(neurone)
-
-        self.ganglions_sensoriels = []
-        for i in range(nb_ganglions):
-            neurone = Neurone(seuil=1.0)
-            self.ganglions_sensoriels.append(neurone)
+        self.ganglions = ganglion
 
         self.interneurones = []
         for i in range(nb_inter):
@@ -90,17 +69,7 @@ class SystemeNerveux:
             neurone = Neurone(seuil=0.8)
             self.moteurs.append(neurone)
 
-        # Connexions aléatoires entre couches
-        ## Première couche
-        for c in self.capteurs:
-            for g in random.sample(self.ganglions_sensoriels, k=2):
-                c.connecter_a(g, random.uniform(0.5, 1.0))
-        for v in self.vomeronasal:
-            for g in random.sample(self.ganglions_sensoriels, k=2):
-                v.connecter_a(g, random.uniform(0.5, 1.0))
-
-        ## Couches suivantes
-        for g in self.ganglions_sensoriels:
+        for g in self.ganglions.neurone:
             for i in random.sample(self.interneurones, k=3):
                 g.connecter_a(i, random.uniform(0.5, 1.0))
         for i in self.interneurones:
@@ -111,17 +80,17 @@ class SystemeNerveux:
                 gm.connecter_a(m, random.uniform(0.5, 1.0))
 
     # --- Simulation d'un cycle d'activité ---
-    def cycle(self, stimulations):
+    def cycle(self, capteurs, vomeronasal, stimulations):
         """stimulations : liste de valeurs entre 0 et 1 pour chaque capteur"""
         # Activer les capteurs
-        for neurone, valeur in zip(self.capteurs, stimulations["aliments"]):
+        for neurone, valeur in zip(capteurs, stimulations["aliments"]):
             neurone.actif = random.random() < valeur
         
-        for neurone, valeur in zip(self.vomeronasal, stimulations["phéromones"]):
+        for neurone, valeur in zip(vomeronasal, stimulations["phéromones"]):
             neurone.actif = random.random() < valeur
 
         # Propagation à travers le réseau
-        for couche in [self.ganglions_sensoriels,
+        for couche in [self.ganglions,
                        self.interneurones,
                        self.ganglions_moteurs,
                        self.moteurs]:
