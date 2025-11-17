@@ -3,7 +3,8 @@
 # ------------------------------------------------------------
 import random, math
 from SimVie_Neurone import SystemeNerveux
-from glande import Glande
+from objects_olfactifs import Glande, Aliment
+from organe_sensoriel import Narine
 
 # ------------------------------------------------------------
 # Données environnementales
@@ -17,15 +18,7 @@ def angle_relatif(src, cible):
     dy = cible[1] - src[1]
     return math.degrees(math.atan2(dy, dx))
 
-# ------------------------------------------------------------
-# Aliment
-# ------------------------------------------------------------
-class Aliment:
-    def __init__(self, position, valeur_nourriture):
-        self.position = position
-        self.valeur_nourriture = valeur_nourriture
-        self.taille = valeur_nourriture * 0.1
-        self.rayon_senteur = valeur_nourriture * 5
+
 
 # ------------------------------------------------------------
 # Créature : perçoit, agit, se nourrit
@@ -38,17 +31,14 @@ class Creature:
         self.vitesse = 20
         self.energie = 100
         self.cerveau = SystemeNerveux()
+        self.narines = Narine(random.uniform(0.8, 1.2))
 
-        # --- Nouvelles propriétés biologiques ---
-        self.sensibilite_olfactive = random.uniform(0.8, 1.2)
-        # Portée olfactive croissant selon la racine carrée de la taille
-        self.portee_olfactive = (150 + math.sqrt(self.taille) * 30) * self.sensibilite_olfactive
-
-        self.envie_reproduction = 0
+        self.envie_reproduction = random.randint(10, 100)
         self.glande = Glande(self.envie_reproduction, self.position)
 
+        
     # --- Olfaction directionnelle ---
-    def percevoir(self, aliments):
+    def percevoir(self, aliments, glandes):
         """
         Retourne deux valeurs (gauche, droite) entre 0 et 1,
         représentant l'intensité olfactive perçue sur chaque côté.
@@ -56,6 +46,7 @@ class Creature:
         """
         # --- Accumulateurs pour les deux "narines" ---
         gauche, droite = 0.0, 0.0
+        g_gauche, g_droite = 0.0, 0.0
 
         # --- Boucle sur chaque source d'odeur (aliment) ---
         for a in aliments:
@@ -63,7 +54,7 @@ class Creature:
             d = distance(self.position, a.position)
 
             # Si l'aliment est dans la portée olfactive
-            if d < self.portee_olfactive:
+            if d < (self.narines.portee_olfactive + a.rayon_senteur):
                 # Calcul de l'angle absolu vers la source
                 ang = angle_relatif(self.position, a.position)
                 # Conversion en angle relatif à l'orientation du corps
@@ -84,17 +75,34 @@ class Creature:
                 elif 0 <= rel < 90:
                     droite += odeur
 
+        for g in glandes:
+            if self.glande != g:
+                d = distance(self.position, g.position)
+
+                if d < (self.narines.portee_olfactive + g.rayon_senteur):
+                    ang = angle_relatif(self.position, g.position)
+                    rel = (ang - self.orientation + 540) % 360 - 180
+
+                    g_odeur = g.valeur_pheromone / (d + 1)
+                    if -90 < rel < 0:
+                        g_gauche += g_odeur
+                    elif 0 <= rel < 90:
+                        g_droite += g_odeur
+
+
         # --- Normalisation du signal ---
         # Le rapport /10 permet de limiter la saturation du capteur :
         # un grand nombre de sources ou une très forte odeur reste borné à 1.0.
         gauche = min(1.0, gauche / 10)
         droite = min(1.0, droite / 10)
+        g_gauche = min(1.0, g_gauche / 10)
+        g_droite = min(1.0, g_droite / 10)
 
         # Retourne le couple d’intensités olfactives (gauche, droite)
-        return [gauche, droite]
+        return {"aliments" : [gauche, droite], "phéromones" : [g_gauche, g_droite]}
 
     # --- Comportement global ---
-    def agir(self, aliments):
+    def agir(self, aliments, glandes):
         """
         Boucle perception-action de la créature.
         Elle perçoit les odeurs, ajuste son orientation, se déplace,
@@ -102,8 +110,9 @@ class Creature:
         """
         # --- 1. PERCEPTION SENSORIELLE ---
         # Le cerveau reçoit deux entrées : intensité olfactive gauche/droite (0 à 1)
-        stimuli = self.percevoir(aliments)
-        gauche, droite = stimuli
+        stimuli = self.percevoir(aliments, glandes)
+        gauche, droite = stimuli["aliments"]
+        g_gauche, g_droite = stimuli["phéromones"]
 
         # --- 2. TRAITEMENT NEURONAL ---
         # Le système nerveux interne traite les signaux sensoriels
@@ -165,7 +174,7 @@ class Modele:
 
     def mise_a_jour(self):
         for c in self.creatures:
-            c.agir(self.aliments)
+            c.agir(self.aliments, [c.glande for c in self.creatures])
 
     def reinitialiser_simulation(self, params):
         random.seed(params["seed"])
