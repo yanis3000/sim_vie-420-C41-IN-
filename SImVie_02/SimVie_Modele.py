@@ -33,7 +33,6 @@ class Creature:
         self.narines = Narine(self.taille, random.uniform(0.8, 1.2))
         self.cerveau = SystemeNerveux(self.narines.capteur.ganglion)
 
-
         self.envie_reproduction = random.randint(10, 100)
         self.glande = Glande(self.envie_reproduction, self.position)
 

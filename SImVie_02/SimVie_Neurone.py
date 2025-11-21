@@ -90,7 +90,7 @@ class SystemeNerveux:
             neurone.actif = random.random() < valeur
 
         # Propagation à travers le réseau
-        for couche in [self.ganglions,
+        for couche in [self.ganglions.neurone,
                        self.interneurones,
                        self.ganglions_moteurs,
                        self.moteurs]:

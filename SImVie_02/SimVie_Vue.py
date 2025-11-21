@@ -259,7 +259,7 @@ class Vue:
         py = y + math.sin(angle) * r * 1.2
         self.canevas.coords(self.id_pointes[creature], px - 2, py - 2, px + 2, py + 2)
 
-        portee = creature.portee_olfactive
+        portee = creature.narines.portee_olfactive
         self.canevas.coords(self.id_olfaction[creature], x - portee, y - portee, x + portee, y + portee)
 
     # ========================================================
