@@ -51,7 +51,6 @@ class SystemeNerveux:
     """Réseau neuronal hiérarchique :
        capteurs -> ganglions sensoriels -> interneurones -> ganglions moteurs -> moteurs"""
     def __init__(self, ganglion, nb_ganglions=4, nb_inter=10, nb_moteurs=4):
-
         self.ganglions = ganglion
 
         self.interneurones = []
@@ -83,9 +82,9 @@ class SystemeNerveux:
     def cycle(self, capteurs, vomeronasal, stimulations):
         """stimulations : liste de valeurs entre 0 et 1 pour chaque capteur"""
         # Activer les capteurs
-        for neurone, valeur in zip(capteurs, stimulations["aliments"]):
+        for neurone, valeur in zip(capteurs, [x for x in stimulations["aliments"] for _ in range(4)]):
             neurone.actif = random.random() < valeur
-        
+
         for neurone, valeur in zip(vomeronasal, stimulations["phéromones"]):
             neurone.actif = random.random() < valeur
 

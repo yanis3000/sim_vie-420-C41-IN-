@@ -1,47 +1,129 @@
 import math, random
 from SimVie_Neurone import Neurone
 
-class Narine:
+# ------------------------------------------------------------
+# Données environnementales
+# ------------------------------------------------------------
+def distance(a, b):
+    return math.sqrt((a[0]-b[0])**2 + (a[1]-b[1])**2)
+
+def angle_relatif(src, cible):
+    """Retourne l’angle relatif entre la créature et la cible (en degrés)."""
+    dx = cible[0] - src[0]
+    dy = cible[1] - src[1]
+    return math.degrees(math.atan2(dy, dx))
+
+class Nez:
     def __init__(self, taille_creature, sensibilite_olfactive):
+
         self.hemi_nourriture_gauche = 0
         self.hemi_nourriture_droite = 0
+
         self.hemi_pheromone_droite = 0
         self.hemi_pheromone_gauche = 0
 
         self.sensibilite_olfactive = sensibilite_olfactive
         self.portee_olfactive = (150 + math.sqrt(taille_creature) * 30) * self.sensibilite_olfactive
 
-        self.capteur = CapteurOlfactif()
+        self.capteur = Capteur()
 
-class CapteurOlfactif:
+    def sentir(self, aliments, glandes, ma_glande):
 
-    def __init__(self, nb_capteurs=8, nb_vomeronasal=8):
-        self.capteurs = []
-        for i in range(nb_capteurs):
+        for a in aliments:
+
+            d = distance(self.position, a.position)
+
+            if d < (self.portee_olfactive + a.rayon_senteur):
+
+                ang = angle_relatif(self.position, a.position)
+                rel = (ang - self.orientation + 540) % 360 - 180
+                odeur = a.valeur_nourriture / (d + 1)
+
+                if -90 < rel < 0:
+                    self.hemi_nourriture_gauche += odeur
+                elif 0 <= rel < 90:
+                    self.hemi_nourriture_droite += odeur
+
+        for g in glandes:
+            if g != ma_glande:
+                d = distance(self.position, g.position)
+
+                if d < (self.portee_olfactive + g.rayon_senteur):
+
+                    ang = angle_relatif(self.position, g.position)
+                    rel = (ang - self.orientation + 540) % 360 - 180
+                    odeur = g.valeur_nourriture / (d + 1)
+
+                    if -90 < rel < 0:
+                        self.hemi_pheromone_gauche += odeur
+                    elif 0 <= rel < 90:
+                        self.hemi_pheromone_droite += odeur
+
+        self.hemi_nourriture_gauche = min(1.0, self.hemi_nourriture_gauche / 10)
+        self.hemi_nourriture_droite = min(1.0, self.hemi_nourriture_droite / 10)
+        self.hemi_pheromone_gauche = min(1.0, self.hemi_pheromone_gauche / 10)
+        self.hemi_pheromone_droite = min(1.0, self.hemi_pheromone_droite / 10)            
+
+
+class Capteur:
+    def __init__(self, neurone_olfactif=8, neurone_vomeronasal=8):
+        self.olfactif_gauche = []
+        self.olfactif_droite = []
+
+
+        for i in range(neurone_olfactif):
             neurone = Neurone(seuil=0.5)
-            self.capteurs.append(neurone)
+            self.olfactif_gauche.append(neurone)
+            neurone = Neurone(seuil=0.5)
+            self.olfactif_droite.append(neurone)
 
-        self.vomeronasal = []
-        for i in range(nb_vomeronasal):
-            neurone = Neurone(seuil=1.0)
-            self.vomeronasal.append(neurone)
+        self.vomeronasal_gauche = []
+        self.vomeronasal_droite = []
 
-        self.ganglion = GanglionOlfactif(self.capteurs, self.vomeronasal)
+        for i in range(neurone_vomeronasal):
+            neurone = Neurone(seuil=0.5)
+            self.vomeronasal_gauche.append(neurone)
+            neurone = Neurone(seuil=0.5)
+            self.vomeronasal_droite.append(neurone)
+
+        self.ganglion = GanglionOlfactif(self.olfactif_gauche, self.olfactif_droite, self.vomeronasal_gauche, self.vomeronasal_droite)
+
+    def recevoir(self, stimuli):
+        pass
 
 class GanglionOlfactif:
 
-    def __init__(self, capteur, vomeronasal, nb_ganglions=4):
+    def __init__(self, olfactif_gauche, olfactif_droite, vomeronasal_gauche, vomeronasal_droite, nb_neurone = 8):
 
-        self.neurone = []
-        for i in range(nb_ganglions):
+        self.neurone_gauche = []
+        self.neurone_droite = []
+        self.actif = True
+
+        for i in range(nb_neurone):
             neurone = Neurone(seuil=1.0)
-            self.neurone.append(neurone)
+            self.neurone_gauche.append(neurone)
+            neurone = Neurone(seuil=1.0)
+            self.neurone_droite.append(neurone)
 
-        # Connexions aléatoires entre couches
-        ## Première couche
-        for c in capteur:
-            for g in random.sample(self.neurone, k=2):
-                c.connecter_a(g, random.uniform(0.5, 1.0))
-        for v in vomeronasal:
-            for g in random.sample(self.neurone, k=2):
-                v.connecter_a(g, random.uniform(0.5, 1.0))
+        # Connexions entre couches
+        for o in olfactif_gauche:
+            for g in random.sample(self.neurone_gauche, k = math.ceil(len(self.neurone_gauche) * 0.7)):
+                o.connecter_a(g, 0.7)
+            for g in random.sample(self.neurone_droite, k = math.ceil(len(self.neurone_droite) * 0.3)):
+                o.connecter_a(g, 0.7)
+        for o in olfactif_droite:
+            for g in random.sample(self.neurone_gauche, k = math.ceil(len(self.neurone_gauche) * 0.7)):
+                o.connecter_a(g, 0.7)
+            for g in random.sample(self.neurone_droite, k = math.ceil(len(self.neurone_droite) * 0.3)):
+                o.connecter_a(g, 0.7)
+
+        for v in vomeronasal_gauche:
+            for g in random.sample(self.neurone_gauche, k = math.ceil(len(self.neurone_gauche) * 0.7)):
+                v.connecter_a(g, 0.7)
+            for g in random.sample(self.neurone_droite, k = math.ceil(len(self.neurone_droite) * 0.3)):
+                v.connecter_a(g, 0.7)
+        for v in vomeronasal_droite:
+            for g in random.sample(self.neurone_gauche, k = math.ceil(len(self.neurone_gauche) * 0.7)):
+                v.connecter_a(g, 0.7)
+            for g in random.sample(self.neurone_droite, k = math.ceil(len(self.neurone_droite) * 0.3)):
+                v.connecter_a(g, 0.7)

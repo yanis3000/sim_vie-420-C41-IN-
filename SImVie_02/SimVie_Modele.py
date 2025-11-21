@@ -4,7 +4,7 @@
 import random, math
 from SimVie_Neurone import SystemeNerveux
 from objects_olfactifs import Glande, Aliment
-from organe_olfactif import Narine
+from organe_olfactif import Nez
 
 # ------------------------------------------------------------
 # Données environnementales
@@ -30,7 +30,7 @@ class Creature:
         self.orientation = random.uniform(0, 360)
         self.vitesse = 20
         self.energie = 100
-        self.narines = Narine(self.taille, random.uniform(0.8, 1.2))
+        self.narines = Nez(self.taille, random.uniform(0.8, 1.2))
         self.cerveau = SystemeNerveux(self.narines.capteur.ganglion)
 
         self.envie_reproduction = random.randint(10, 100)
@@ -39,67 +39,69 @@ class Creature:
         
     # --- Olfaction directionnelle ---
     def percevoir(self, aliments, glandes):
-        """
-        Retourne deux valeurs (gauche, droite) entre 0 et 1,
-        représentant l'intensité olfactive perçue sur chaque côté.
-        Simule une stéréoscopie olfactive simplifiée.
-        """
-        # --- Accumulateurs pour les deux "narines" ---
-        gauche, droite = 0.0, 0.0
-        g_gauche, g_droite = 0.0, 0.0
+        self.narines.sentir(aliments, glandes, self.glande)
 
-        # --- Boucle sur chaque source d'odeur (aliment) ---
-        for a in aliments:
-            # Distance euclidienne entre la créature et l'aliment
-            d = distance(self.position, a.position)
+        # """
+        # Retourne deux valeurs (gauche, droite) entre 0 et 1,
+        # représentant l'intensité olfactive perçue sur chaque côté.
+        # Simule une stéréoscopie olfactive simplifiée.
+        # """
+        # # --- Accumulateurs pour les deux "narines" ---
+        # gauche, droite = 0.0, 0.0
+        # g_gauche, g_droite = 0.0, 0.0
 
-            # Si l'aliment est dans la portée olfactive
-            if d < (self.narines.portee_olfactive + a.rayon_senteur):
-                # Calcul de l'angle absolu vers la source
-                ang = angle_relatif(self.position, a.position)
-                # Conversion en angle relatif à l'orientation du corps
-                # (normalisation dans l'intervalle -180° à +180°)
-                rel = (ang - self.orientation + 540) % 360 - 180
+        # # --- Boucle sur chaque source d'odeur (aliment) ---
+        # for a in aliments:
+        #     # Distance euclidienne entre la créature et l'aliment
+        #     d = distance(self.position, a.position)
 
-                # Intensité du signal olfactif : plus c’est proche, plus c’est fort
-                # On ajoute +1 pour éviter une division par zéro
-                odeur = a.valeur_nourriture / (d + 1)
+        #     # Si l'aliment est dans la portée olfactive
+        #     if d < (self.narines.portee_olfactive + a.rayon_senteur):
+        #         # Calcul de l'angle absolu vers la source
+        #         ang = angle_relatif(self.position, a.position)
+        #         # Conversion en angle relatif à l'orientation du corps
+        #         # (normalisation dans l'intervalle -180° à +180°)
+        #         rel = (ang - self.orientation + 540) % 360 - 180
 
-                # Répartition stéréoscopique :
-                # - Si la source est dans l’hémisphère gauche (-90° < angle < 0°)
-                #   → accumulation sur le capteur gauche
-                # - Si elle est à droite (0° < angle < 90°)
-                #   → accumulation sur le capteur droit
-                if -90 < rel < 0:
-                    gauche += odeur
-                elif 0 <= rel < 90:
-                    droite += odeur
+        #         # Intensité du signal olfactif : plus c’est proche, plus c’est fort
+        #         # On ajoute +1 pour éviter une division par zéro
+        #         odeur = a.valeur_nourriture / (d + 1)
 
-        for g in glandes:
-            if self.glande != g:
-                d = distance(self.position, g.position)
+        #         # Répartition stéréoscopique :
+        #         # - Si la source est dans l’hémisphère gauche (-90° < angle < 0°)
+        #         #   → accumulation sur le capteur gauche
+        #         # - Si elle est à droite (0° < angle < 90°)
+        #         #   → accumulation sur le capteur droit
+        #         if -90 < rel < 0:
+        #             gauche += odeur
+        #         elif 0 <= rel < 90:
+        #             droite += odeur
 
-                if d < (self.narines.portee_olfactive + g.rayon_senteur):
-                    ang = angle_relatif(self.position, g.position)
-                    rel = (ang - self.orientation + 540) % 360 - 180
+        # for g in glandes:
+        #     if self.glande != g:
+        #         d = distance(self.position, g.position)
 
-                    g_odeur = g.valeur_pheromone / (d + 1)
-                    if -90 < rel < 0:
-                        g_gauche += g_odeur
-                    elif 0 <= rel < 90:
-                        g_droite += g_odeur
+        #         if d < (self.narines.portee_olfactive + g.rayon_senteur):
+        #             ang = angle_relatif(self.position, g.position)
+        #             rel = (ang - self.orientation + 540) % 360 - 180
+
+        #             g_odeur = g.valeur_pheromone / (d + 1)
+        #             if -90 < rel < 0:
+        #                 g_gauche += g_odeur
+        #             elif 0 <= rel < 90:
+        #                 g_droite += g_odeur
 
 
-        # --- Normalisation du signal ---
-        # Le rapport /10 permet de limiter la saturation du capteur :
-        # un grand nombre de sources ou une très forte odeur reste borné à 1.0.
-        gauche = min(1.0, gauche / 10)
-        droite = min(1.0, droite / 10)
-        g_gauche = min(1.0, g_gauche / 10)
-        g_droite = min(1.0, g_droite / 10)
+        # # --- Normalisation du signal ---
+        # # Le rapport /10 permet de limiter la saturation du capteur :
+        # # un grand nombre de sources ou une très forte odeur reste borné à 1.0.
+        # gauche = min(1.0, gauche / 10)
+        # droite = min(1.0, droite / 10)
+        # g_gauche = min(1.0, g_gauche / 10)
+        # g_droite = min(1.0, g_droite / 10)
 
-        # Retourne le couple d’intensités olfactives (gauche, droite)
-        return {"aliments" : [gauche, droite], "phéromones" : [g_gauche, g_droite]}
+        # # Retourne le couple d’intensités olfactives (gauche, droite)
+        # return {"aliments" : [gauche, droite], "phéromones" : [g_gauche, g_droite]}
 
     # --- Comportement global ---
     def agir(self, aliments, glandes):
@@ -110,14 +112,19 @@ class Creature:
         """
         # --- 1. PERCEPTION SENSORIELLE ---
         # Le cerveau reçoit deux entrées : intensité olfactive gauche/droite (0 à 1)
-        stimuli = self.percevoir(aliments, glandes)
-        gauche, droite = stimuli["aliments"]
-        g_gauche, g_droite = stimuli["phéromones"]
+
+        self.percevoir(aliments, glandes)
+
+        # stimuli = self.percevoir(aliments, glandes)
+        # gauche, droite = stimuli["aliments"]
+        # g_gauche, g_droite = stimuli["phéromones"]
 
         # --- 2. TRAITEMENT NEURONAL ---
         # Le système nerveux interne traite les signaux sensoriels
         # et produit une activation motrice globale (de 0 à 1)
-        activation = self.cerveau.cycle(self.narines.capteur.capteurs, self.narines.capteur.vomeronasal, stimuli)
+
+        # activation = self.cerveau.cycle(self.narines.capteur.capteurs, self.narines.capteur.vomeronasal, stimuli)
+        # print(activation)
 
         # --- 3. ORIENTATION ---
         # Différence gauche-droite → rotation vers le côté le plus odorant
